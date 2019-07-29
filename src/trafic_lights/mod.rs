@@ -1,5 +1,8 @@
 mod trafic_light;
 
+use std::thread;
+use std::time::Duration;
+
 pub use trafic_light::LightFace;
 pub use trafic_light::LightColor;
 
@@ -30,6 +33,44 @@ impl TraficLight {
             lights,
         }
     }
+
+    fn startClock(&self){
+        let mut time :u64 = 0;
+        loop{
+            thread::sleep(Duration::from_secs(1));
+            print!("{}", time);
+            time += 1;
+        }
+    }
+
+    pub fn start(&self) {
+        println!("starting the lights");
+        let mut handlers : Vec<thread::JoinHandle<_>> = Vec::with_capacity(4);
+        for i in 0..4 {
+            let mut tf = self.lights[i].clone();
+            let handle = thread::spawn(move || {
+                tf.start(i as u32);
+            });
+            handlers.push(handle);
+        }
+        let mut count = 0;
+        let mut handleCount = thread::spawn(move || {
+            loop{
+                thread::sleep(Duration::from_secs(1));
+                count += 1;
+                println!("{}", count);
+            }
+        });
+        println!("started the lights");
+        println!("joining all handlers");
+        for handle in handlers{
+            handle.join().unwrap();
+        }
+        handleCount.join().unwrap();
+        println!("joined");
+    }
+
+    // need to start different thread for each of the light face
 
     pub fn printStateOfAll(&self){
         println!("Light one: {:#?}", self.lights[0]);
